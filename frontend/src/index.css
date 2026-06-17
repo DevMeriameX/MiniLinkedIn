@@ -1,0 +1,348 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+
+/* ========================================
+   COULEURS DU THEME (basé sur votre template)
+   ======================================== */
+:root {
+  /* Couleurs principales */
+  --primary: #004e99;
+  --primary-container: #0a66c2;
+  --primary-fixed: #d6e3ff;
+  --primary-fixed-dim: #a8c8ff;
+  --on-primary: #ffffff;
+  --on-primary-fixed: #001b3d;
+  --on-primary-container: #dbe6ff;
+  
+  /* Couleurs secondaires */
+  --secondary: #495f83;
+  --secondary-container: #bfd5ff;
+  --secondary-fixed: #d6e3ff;
+  --secondary-fixed-dim: #b1c7f1;
+  --on-secondary: #ffffff;
+  --on-secondary-fixed: #001b3c;
+  --on-secondary-container: #465c80;
+  
+  /* Couleurs tertiaires */
+  --tertiary: #833900;
+  --tertiary-container: #a94b00;
+  --tertiary-fixed: #ffdbca;
+  --tertiary-fixed-dim: #ffb68e;
+  --on-tertiary: #ffffff;
+  --on-tertiary-fixed: #331200;
+  --on-tertiary-container: #ffe0d1;
+  
+  /* Couleurs de surface */
+  --surface: #faf9f6;
+  --surface-dim: #dbdad7;
+  --surface-bright: #faf9f6;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f4f3f0;
+  --surface-container: #efeeeb;
+  --surface-container-high: #e9e8e5;
+  --surface-container-highest: #e3e2df;
+  --surface-variant: #e3e2df;
+  --on-surface: #1b1c1a;
+  --on-surface-variant: #414752;
+  
+  /* Couleurs d'erreur */
+  --error: #ba1a1a;
+  --error-container: #ffdad6;
+  --on-error: #ffffff;
+  --on-error-container: #93000a;
+  
+  /* Autres couleurs */
+  --outline: #727783;
+  --outline-variant: #c1c6d4;
+  --background: #faf9f6;
+  --on-background: #1b1c1a;
+  --inverse-surface: #2f312f;
+  --inverse-on-surface: #f2f1ee;
+  --inverse-primary: #a8c8ff;
+  --surface-tint: #005eb5;
+  
+  /* Ombres */
+  --shadow: rgba(27, 28, 26, 0.1) 0 10px 15px -3px, rgba(27, 28, 26, 0.05) 0 4px 6px -2px;
+  --shadow-custom: 0px 4px 20px rgba(27, 28, 26, 0.06);
+  
+  /* Bordures */
+  --border-light: #e5e4e7;
+  
+  /* Typographie */
+  --font-headline: 'Manrope', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+/* ========================================
+   THEME SOMBRE (Dark Mode)
+   ======================================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary: #004e99;
+    --primary-container: #0a66c2;
+    --surface: #16171d;
+    --surface-container-lowest: #1f2028;
+    --surface-container-low: #2e303a;
+    --surface-container: #2e303a;
+    --surface-container-high: #3a3c47;
+    --on-surface: #f3f4f6;
+    --on-surface-variant: #9ca3af;
+    --outline: #5e6472;
+    --border-light: #2e303a;
+    --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  }
+}
+
+/* ========================================
+   STYLES DE BASE
+   ======================================== */
+@layer base {
+  body {
+    font-family: var(--font-body);
+    background-color: var(--surface);
+    color: var(--on-surface);
+    margin: 0;
+    padding: 0;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-headline);
+    letter-spacing: -0.02em;
+    color: var(--on-surface);
+  }
+  
+  /* Style pour les liens */
+  a {
+    text-decoration: none;
+  }
+}
+
+/* ========================================
+   ICONES MATERIAL
+   ======================================== */
+@layer utilities {
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* ========================================
+   COMPOSANTS PERSONNALISÉS
+   ======================================== */
+
+/* Cartes */
+.card {
+  background: var(--surface-container-lowest);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-custom);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+/* Boutons */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%);
+  color: var(--on-primary);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -5px rgba(0, 78, 153, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: var(--surface-container-high);
+  color: var(--primary);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--surface-container-highest);
+}
+
+/* Inputs */
+.input-field {
+  background: var(--surface-container-high);
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  color: var(--on-surface);
+  transition: all 0.2s ease;
+  width: 100%;
+  outline: none;
+}
+
+.input-field:focus {
+  background: var(--surface-container-lowest);
+  ring: 1px solid var(--primary);
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-primary {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+}
+
+.badge-secondary {
+  background: var(--secondary-container);
+  color: var(--on-secondary-container);
+}
+
+.badge-success {
+  background: #10b981;
+  color: white;
+}
+
+.badge-warning {
+  background: #f59e0b;
+  color: white;
+}
+
+.badge-error {
+  background: var(--error);
+  color: var(--on-error);
+}
+
+/* ========================================
+   CLASSES UTILITAIRES
+   ======================================== */
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass {
+  background: rgba(22, 23, 29, 0.8);
+}
+
+/* Gradient text */
+.text-gradient {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Flex center */
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Loading spinner */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--surface-container-high);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 1024px) {
+  body {
+    font-size: 16px;
+  }
+  
+  h1 {
+    font-size: 2rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+}
+
+/* ========================================
+   SCROLLBAR PERSONNALISÉE
+   ======================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface-container-low);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--outline);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}

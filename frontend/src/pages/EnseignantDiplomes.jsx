@@ -1,0 +1,446 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { diplomeService } from '../services/api';
+import { BASE_URL } from '../config';
+import toast from 'react-hot-toast';
+
+const EnseignantDiplomes = () => {
+  const { user } = useAuth();
+  const [diplomes, setDiplomes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [resubmitId, setResubmitId] = useState(null);
+  const [showArchived, setShowArchived] = useState(false);
+
+  // Formulaire d'ajout
+  const [formData, setFormData] = useState({
+    typeDocument: 'DIPLOME_MASTER',
+    etablissement: '',
+    diplomeNom: '',
+    anneeObtention: '',
+    numeroDiplome: '',
+    document: null
+  });
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchDiplomes();
+    }
+  }, [user]);
+
+  const fetchDiplomes = async () => {
+    try {
+      setLoading(true);
+      const response = await diplomeService.getMesDiplomes(user.id);
+      const data = response.data;
+      setDiplomes(Array.isArray(data) ? data : data?.diplomes || data?.documents || []);
+    } catch (err) {
+      toast.error("Erreur lors du chargement de vos diplômes");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e) => {
+    setFormData(prev => ({ ...prev, document: e.target.files[0] }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.document && !resubmitId) {
+      toast.error("Veuillez joindre le justificatif (PDF/Image)");
+      return;
+    }
+
+    setSubmitting(true);
+    const data = new FormData();
+    
+    try {
+      if (resubmitId) {
+        // Re-soumission d'une nouvelle version ou modification
+        data.append('enseignantId', user.id);
+        data.append('typeDocument', formData.typeDocument);
+        data.append('etablissement', formData.etablissement);
+        data.append('diplomeNom', formData.diplomeNom);
+        data.append('anneeObtention', formData.anneeObtention);
+        data.append('numeroDiplome', formData.numeroDiplome);
+        if (formData.document) {
+          data.append('document', formData.document);
+        }
+        await diplomeService.resoumettreDiplome(resubmitId, data);
+        toast.success("Diplôme mis à jour avec succès");
+      } else {
+        // Nouvelle soumission complète
+        data.append('enseignantId', user.id);
+        data.append('typeDocument', formData.typeDocument);
+        data.append('etablissement', formData.etablissement);
+        data.append('diplomeNom', formData.diplomeNom);
+        data.append('anneeObtention', formData.anneeObtention);
+        data.append('numeroDiplome', formData.numeroDiplome);
+        data.append('document', formData.document);
+        await diplomeService.soumettreDiplome(data);
+        toast.success("Diplôme soumis pour vérification");
+      }
+      
+      resetForm();
+      fetchDiplomes();
+    } catch (err) {
+      toast.error(err.response?.data || "Une erreur est survenue");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      typeDocument: 'DIPLOME_MASTER',
+      etablissement: '',
+      diplomeNom: '',
+      anneeObtention: '',
+      numeroDiplome: '',
+      document: null
+    });
+    setResubmitId(null);
+    // Reset file input manually if needed, but React state takes care of the logic
+  };
+
+  const startResubmit = (diplome) => {
+    setResubmitId(diplome.id);
+    setFormData({
+      ...formData,
+      typeDocument: diplome.typeDocument,
+      etablissement: diplome.etablissement,
+      diplomeNom: diplome.diplomeNom,
+      anneeObtention: diplome.anneeObtention,
+      numeroDiplome: diplome.numeroDiplome || ''
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleArchiver = async (id) => {
+    if (!window.confirm('Voulez-vous vraiment archiver ce diplôme ?')) return;
+    try {
+      await diplomeService.archiverDiplome(id, user.id);
+      toast.success("Diplôme archivé avec succès");
+      setDiplomes(prev => prev.map(d => d.id === id ? { ...d, actif: false } : d));
+    } catch (err) {
+      toast.error("Erreur lors de l'archivage");
+    }
+  };
+
+  const handleReactiver = async (id) => {
+    try {
+      await diplomeService.reactiverDiplome(id, user.id);
+      toast.success("Diplôme réactivé avec succès");
+      setDiplomes(prev => prev.map(d => d.id === id ? { ...d, actif: true } : d));
+    } catch (err) {
+      toast.error("Erreur lors de la réactivation");
+    }
+  };
+
+  const handleEdit = (diplome) => {
+    startResubmit(diplome);
+  };
+
+  const diplomesToDisplay = diplomes.filter(d => !!d.actif === !showArchived);
+
+  return (
+    <div className="w-full p-4 md:p-6 space-y-6 animate-fade-in">
+      {/* En-tête de page */}
+      <div className="mb-6">
+        <h1 className="text-4xl font-black text-slate-900 tracking-tight">Mes Diplômes</h1>
+        <p className="text-slate-500 mt-2 text-lg">Gérez et authentifiez vos titres académiques pour renforcer votre crédibilité.</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        {/* Colonne GAUCHE (5/12) : Formulaire d'ajout */}
+        <div className="lg:col-span-5 bg-white rounded-3xl p-8 shadow-ambient border border-slate-100 sticky top-24">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+              <span className="material-symbols-outlined text-2xl">{resubmitId ? 'sync' : 'add_task'}</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-slate-900">{resubmitId ? 'Nouvelle version' : 'Soumettre un diplôme'}</h2>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{resubmitId ? 'Mise à jour du document' : 'Formulaire de vérification'}</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Type de diplôme</label>
+              <select 
+                name="typeDocument"
+                className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none font-bold appearance-none cursor-pointer disabled:opacity-60 transition-all"
+                value={formData.typeDocument}
+                onChange={handleInputChange}
+              >
+                <option value="DIPLOME_LICENCE">Licence</option>
+                <option value="DIPLOME_MASTER">Master</option>
+                <option value="DIPLOME_DOCTORAT">Doctorat</option>
+                <option value="CERTIFICAT_PROFESSIONNEL">Certification Professionnelle</option>
+                <option value="AUTRE">Autre</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Intitulé exact</label>
+              <input 
+                type="text"
+                name="diplomeNom"
+                placeholder="Ex: Master en Intelligence Artificielle"
+                className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none font-bold disabled:opacity-60 transition-all"
+                required
+                value={formData.diplomeNom}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Établissement d'obtention</label>
+              <input 
+                type="text"
+                name="etablissement"
+                placeholder="Ex: Université Mohammed V"
+                className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none font-bold disabled:opacity-60 transition-all"
+                required
+                value={formData.etablissement}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Année</label>
+                <input 
+                  type="text"
+                  name="anneeObtention"
+                  placeholder="Ex: 2022"
+                  className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none font-bold disabled:opacity-60 transition-all"
+                  required
+                  value={formData.anneeObtention}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">N° Diplôme (Optionnel)</label>
+                <input 
+                  type="text"
+                  name="numeroDiplome"
+                  placeholder="ID unique"
+                  className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none font-bold disabled:opacity-60 transition-all"
+                  value={formData.numeroDiplome}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Justificatif (PDF / Scan)</label>
+              <div className="relative group">
+                <input 
+                  type="file" 
+                  onChange={handleFileChange}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                />
+                <div className="w-full px-6 py-8 bg-slate-50 border-2 border-dashed border-slate-200 group-hover:border-blue-400 group-hover:bg-blue-50 rounded-2xl transition-all flex flex-col items-center justify-center gap-2">
+                  <span className="material-symbols-outlined text-3xl text-slate-300 group-hover:text-blue-500 transition-all">cloud_upload</span>
+                  <span className="text-sm font-bold text-slate-500 group-hover:text-blue-600">
+                    {formData.document ? formData.document.name : "Cliquez pour uploader"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 flex gap-3">
+              {resubmitId && (
+                <button 
+                  type="button" 
+                  onClick={resetForm}
+                  className="flex-1 py-4 px-6 border-2 border-slate-100 text-slate-400 rounded-2xl font-black hover:bg-slate-50 transition-all"
+                >
+                  Annuler
+                </button>
+              )}
+              <button 
+                type="submit" 
+                disabled={submitting}
+                className={`flex-[2] py-4 px-6 bg-slate-900 text-white rounded-2xl font-black shadow-xl shadow-slate-200 hover:bg-blue-600 transition-all flex items-center justify-center gap-2 ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+              >
+                {submitting ? (
+                  <span className="animate-spin material-symbols-outlined">sync</span>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined">{resubmitId ? 'publish' : 'send'}</span>
+                    {resubmitId ? 'Mettre à jour' : 'Soumettre le dossier'}
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Colonne DROITE (7/12) : Liste des diplômes */}
+        <div className="lg:col-span-7 space-y-6">
+          <div className="flex gap-4 border-b border-slate-100 pb-4">
+            <button
+              onClick={() => setShowArchived(false)}
+              className={`pb-2 px-2 text-sm font-black transition-all border-b-2 ${!showArchived ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+            >
+              Diplômes Actifs
+            </button>
+            <button
+              onClick={() => setShowArchived(true)}
+              className={`pb-2 px-2 text-sm font-black transition-all border-b-2 ${showArchived ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+            >
+              Archives
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
+              <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Chargement de vos documents...</p>
+            </div>
+          ) : diplomesToDisplay.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-100 text-center px-10">
+              <span className="material-symbols-outlined text-6xl text-slate-200 mb-4">folder_off</span>
+              <h3 className="text-xl font-black text-slate-900">{showArchived ? 'Aucune archive' : 'Aucun diplôme trouvé'}</h3>
+              <p className="text-slate-500 mt-2">{showArchived ? 'Vos diplômes archivés apparaîtront ici.' : 'Commencez par soumettre votre diplôme le plus récent via le formulaire.'}</p>
+            </div>
+          ) : (
+            diplomesToDisplay.map(doc => (
+              <div 
+                key={doc.id} 
+                className={`bg-white rounded-3xl p-8 shadow-ambient border-l-8 transition-all hover:scale-[1.01] ${
+                  doc.statut === 'VERIFIE' ? 'border-green-500' : 
+                  doc.statut === 'REJETE' ? 'border-red-500' : 'border-amber-500'
+                }`}
+              >
+                <div className="flex flex-col md:flex-row justify-between gap-6">
+                  <div className="flex gap-5">
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+                      doc.statut === 'VERIFIE' ? 'bg-green-50 text-green-600' : 
+                      doc.statut === 'REJETE' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'
+                    }`}>
+                      <span className="material-symbols-outlined text-3xl">
+                        {doc.typeDocument === 'DIPLOME_DOCTORAT' ? 'school' : 'history_edu'}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-3 mb-2">
+                        <h3 className="text-xl font-black text-slate-900 leading-tight">{doc.diplomeNom}</h3>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 ${
+                          doc.statut === 'VERIFIE' ? 'bg-green-100 text-green-700' : 
+                          doc.statut === 'REJETE' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          <span className="material-symbols-outlined text-xs">
+                            {doc.statut === 'VERIFIE' ? 'verified' : doc.statut === 'REJETE' ? 'cancel' : 'pending'}
+                          </span>
+                          {doc.statut ? String(doc.statut).replace('_', ' ') : 'EN ATTENTE'}
+                        </span>
+                      </div>
+                      <p className="text-slate-600 font-bold">{doc.etablissement}</p>
+                      <p className="text-slate-400 text-sm font-medium mt-1">Obtenu en {doc.anneeObtention} • Soumis le {new Date(doc.dateSoumission).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col md:flex-col justify-end gap-3">
+                    {doc.actif ? (
+                      <button 
+                        onClick={() => handleArchiver(doc.id)}
+                        className="px-5 py-2.5 bg-red-50 text-red-700 rounded-xl font-bold text-sm hover:bg-red-100 transition-all flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-lg">archive</span>
+                        Archiver
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => handleReactiver(doc.id)}
+                        className="px-5 py-2.5 bg-green-50 text-green-700 rounded-xl font-bold text-sm hover:bg-green-100 transition-all flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-lg">unarchive</span>
+                        Réactiver
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => handleEdit(doc)}
+                      className="px-5 py-2.5 bg-blue-50 text-blue-700 rounded-xl font-bold text-sm hover:bg-blue-100 transition-all flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-lg">edit</span>
+                      Modifier
+                    </button>
+                    <a 
+                      href={`${BASE_URL}${doc.documentUrl}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="px-5 py-2.5 bg-slate-50 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-100 transition-all flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-lg">open_in_new</span>
+                      Voir
+                    </a>
+                  </div>
+                </div>
+
+                {/* Section Rejet / Commentaire Admin */}
+                {doc.statut === 'REJETE' && (
+                  <div className="mt-8 pt-8 border-t border-red-50 flex flex-col md:flex-row items-center justify-between gap-6 animate-in slide-in-from-bottom-2">
+                    <div className="flex gap-4">
+                      <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center text-red-600 flex-shrink-0">
+                        <span className="material-symbols-outlined text-xl">chat_bubble</span>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Commentaire Administration</p>
+                        <p className="text-sm text-red-700 italic font-medium leading-relaxed">"{doc.commentaireAdmin || "Votre document n'est pas lisible ou non conforme. Veuillez renvoyer une version claire."}"</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => startResubmit(doc)}
+                      className="whitespace-now8 py-3 px-6 bg-red-600 text-white rounded-xl font-black text-sm hover:bg-red-700 shadow-lg shadow-red-100 transition-all flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-lg">sync</span>
+                      Soumettre à nouveau
+                    </button>
+                  </div>
+                )}
+                
+                {doc.statut === 'VERIFIE' && doc.commentaireAdmin && (
+                  <div className="mt-8 pt-8 border-t border-green-50 flex gap-4">
+                    <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center text-green-600 flex-shrink-0">
+                      <span className="material-symbols-outlined text-xl">verified_user</span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">Note de validation</p>
+                      <p className="text-sm text-green-800 font-medium">{doc.commentaireAdmin}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <style>{`
+        .shadow-ambient {
+          box-shadow: 0px 4px 20px rgba(27, 28, 26, 0.05);
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default EnseignantDiplomes;

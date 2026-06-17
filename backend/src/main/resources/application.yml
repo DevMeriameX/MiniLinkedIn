@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: backend
+  datasource:
+    url: jdbc:postgresql://localhost:5432/MiniLinkedin
+    username: postgres
+    password: 1234
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+  web:
+    resources:
+      static-locations: classpath:/static/,file:uploads/
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+
+
+server:
+  port: 8081
+
+jwt:
+  secret: votreSecretKeyTresLonguePourHS25612345678901234567890
+  expiration: 86400000

@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: postgres-test
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: gestion_test
+    ports:
+      - "5433:5432" # Port isolé pour éviter les conflits avec la BDD de prod
+    restart: always
