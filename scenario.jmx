@@ -66,7 +66,7 @@
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
                 <stringProp name="Argument.value">{&#xd;
   &quot;email&quot;: &quot;meriame@gmail.com&quot;,&#xd;
-  &quot;password&quot;: &quot;1234&quot;&#xd;
+  &quot;motDePasse&quot;: &quot;1234&quot;&#xd;
 }</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
@@ -75,10 +75,10 @@
         </HTTPSamplerProxy>
         <hashTree>
           <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="JSON Extractor - JWT Token" enabled="true">
-            <stringProp name="JSONPostProcessor.referenceNames">jwtToken</stringProp>
-            <stringProp name="JSONPostProcessor.jsonPathExprs">$.token</stringProp>
+            <stringProp name="JSONPostProcessor.referenceNames">jwtToken;enseignantId</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.token;$.id</stringProp>
             <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
-            <stringProp name="JSONPostProcessor.defaultValues">TOKEN_NOT_FOUND</stringProp>
+            <stringProp name="JSONPostProcessor.defaultValues">TOKEN_NOT_FOUND;ID_NOT_FOUND</stringProp>
           </JSONPostProcessor>
           <hashTree/>
         </hashTree>
@@ -92,7 +92,7 @@
         </HeaderManager>
         <hashTree/>
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="2. GET - Mon Profil" enabled="true">
-          <stringProp name="HTTPSampler.path">/api/profil/me</stringProp>
+          <stringProp name="HTTPSampler.path">/api/enseignant/profil/me</stringProp>
           <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
           <stringProp name="HTTPSampler.method">GET</stringProp>
           <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
@@ -103,7 +103,7 @@
         </HTTPSamplerProxy>
         <hashTree/>
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="3. GET - Flux de Publications" enabled="true">
-          <stringProp name="HTTPSampler.path">/api/publications</stringProp>
+          <stringProp name="HTTPSampler.path">/api/enseignant/${enseignantId}/publications</stringProp>
           <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
           <stringProp name="HTTPSampler.method">GET</stringProp>
           <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
