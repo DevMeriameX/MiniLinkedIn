@@ -68,6 +68,7 @@ pipeline {
                     }
                 }
             }
+         }
 
         // Bloque le pipeline si le rapport SonarQube échoue (Quality Gate)
         stage("3b. Quality Gate") {
