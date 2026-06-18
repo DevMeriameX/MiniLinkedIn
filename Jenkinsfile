@@ -46,22 +46,33 @@ pipeline {
         // ==========================================
         // 3. ANALYSE SÉCURITÉ (SonarQube)
         // ==========================================
-        stage('3. Analyse Sécurité & Qualité') {
+         stage('3. Analyse Sécurité & Qualité') {
             steps {
-                // 'SonarQubeServer' doit être le nom configuré dans Administrer Jenkins > Système
                 withSonarQubeEnv('SonarQubeServer') {
                     dir('backend') {
-                        // On lance le scanner pour inspecter le code
-                        bat "${SCANNER_HOME}/bin/sonar-scanner -Dsonar.projectKey=MiniLinkedIn -Dsonar.projectName=MiniLinkedIn -Dsonar.sources=src -Dsonar.java.binaries=target/classes"
+                        bat """
+                            ${SCANNER_HOME}/bin/sonar-scanner \
+                            -Dsonar.projectKey=MiniLinkedIn \
+                            -Dsonar.projectName=MiniLinkedIn \
+                            -Dsonar.projectVersion=1.0.0 \
+                            -Dsonar.sources=src/main/java \
+                            -Dsonar.tests=src/test/java \
+                            -Dsonar.java.binaries=target/classes \
+                            -Dsonar.java.libraries=target/**/*.jar \
+                            -Dsonar.java.test.binaries=target/test-classes \
+                            -Dsonar.java.test.libraries=target/**/*.jar \
+                            -Dsonar.exclusions=**/generated/** \
+                            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+                            -Dsonar.junit.reportPaths=target/surefire-reports
+                        """
                     }
                 }
             }
-        }
 
         // Bloque le pipeline si le rapport SonarQube échoue (Quality Gate)
         stage("3b. Quality Gate") {
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
+                timeout(time: 10, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
