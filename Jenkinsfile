@@ -97,11 +97,11 @@ pipeline {
         stage('5. Déploiement Automatique') {
             steps {
                 // Arrêt et suppression de l'ancien conteneur s'il existe pour libérer le port 8080
-                bat "docker stop minilinkedin-app || true"
-                bat "docker rm minilinkedin-app || true"
+                bat "docker stop minilinkedin-app 2>nul || exit 0"
+                bat "docker rm minilinkedin-app 2>nul || exit 0"
                 
                 // Lancement du nouveau conteneur en arrière-plan
-                bat "docker run -d --name minilinkedin-app -p 8080:8081 minilinkedin:1.0.0"
+                bat "docker run -d --name minilinkedin-app -p 8080:8080 minilinkedin:1.0.0"
             }
         }
 
