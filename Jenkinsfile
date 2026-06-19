@@ -80,13 +80,41 @@ pipeline {
         }
 
         // ==========================================
-        // 4. TESTS DE PERFORMANCE (JMeter)
+        // 4. CONTENEURISATION (Docker Build)
         // ==========================================
-        stage('4. Tests de Performance') {
+        stage('4. Docker Build') {
             steps {
-                // On crée un dossier pour stocker les résultats
+                dir('backend') {
+                    // Construction de l'image Docker de MiniLinkedIn à partir du Dockerfile
+                    bat "docker build -t minilinkedin:1.0.0 ."
+                }
+            }
+        }
+
+        // ==========================================
+        // 5. DÉPLOIEMENT AUTOMATIQUE (Docker Run)
+        // ==========================================
+        stage('5. Déploiement Automatique') {
+            steps {
+                // Arrêt et suppression de l'ancien conteneur s'il existe pour libérer le port 8080
+                bat "docker stop minilinkedin-app || true"
+                bat "docker rm minilinkedin-app || true"
+                
+                // Lancement du nouveau conteneur en arrière-plan
+                bat "docker run -d --name minilinkedin-app -p 8080:8080 minilinkedin:1.0.0"
+            }
+        }
+
+        // ==========================================
+        // 6. TESTS DE PERFORMANCE (JMeter)
+        // ==========================================
+        stage('6. Tests de Performance') {
+            steps {
+                // On nettoie l'ancien dossier s'il existe, puis on le crée pour stocker les résultats
+                bat "if exist rapports rmdir /s /q rapports"
                 bat "mkdir rapports"
-                // On lance JMeter en mode console (remplace 'scenario.jmx' par ton fichier de test s'il a un autre nom)
+                
+                // On lance JMeter en mode console qui va cibler l'application fraîchement déployée
                 bat "jmeter -n -t scenario.jmx -l rapports/resultats.jtl"
                 
                 // Affiche les graphiques JMeter directement dans Jenkins
