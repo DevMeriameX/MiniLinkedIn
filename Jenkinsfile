@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        MAVEN_HOME   = tool 'Maven3' // Utilise ton installation automatique appelée Maven3
-        SCANNER_HOME = tool 'SonarQubeScanner' // /!\ Assure-toi d'avoir configuré un SonarQube Scanner dans Jenkins sous ce nom
+        MAVEN_HOME   = tool 'Maven3' // Installation automatique de Maven
+        SCANNER_HOME = tool 'SonarQubeScanner' // Installation de SonarQube Scanner
     }
 
     stages {
@@ -37,7 +37,7 @@ pipeline {
         stage('2. Build & Package') {
             steps {
                 dir('backend') {
-                    // On compile et on génère le fichier .jar/.war exigé, sans rejouer les tests
+                    // Compilation et génération du fichier .jar sans rejouer les tests
                     bat "${MAVEN_HOME}/bin/mvn clean package -DskipTests"
                 }
             }
@@ -80,13 +80,24 @@ pipeline {
         }
 
         // ==========================================
-        // 4. CONTENEURISATION (Docker Build)
+        // 4. CONTENEURISATION (Docker Build en parallèle)
         // ==========================================
         stage('4. Docker Build') {
-            steps {
-                dir('backend') {
-                    // Construction de l'image Docker de MiniLinkedIn à partir du Dockerfile
-                    bat "docker build -t minilinkedin:1.0.0 ."
+            parallel {
+                stage('Docker Build - Backend') {
+                    steps {
+                        dir('backend') {
+                            bat "docker build -t minilinkedin:1.0.0 ."
+                        }
+                    }
+                }
+                stage('Docker Build - Frontend') {
+                    steps {
+                        dir('frontend') {
+                            // On construit l'image de production React + Nginx
+                            bat "docker build -t minilinkedin-frontend:1.0.0 ."
+                        }
+                    }
                 }
             }
         }
@@ -96,12 +107,17 @@ pipeline {
         // ==========================================
         stage('5. Déploiement Automatique') {
             steps {
-                // Arrêt et suppression de l'ancien conteneur s'il existe pour libérer le port 8080
-                bat "docker stop minilinkedin-app 2>nul || exit 0"
-                bat "docker rm minilinkedin-app 2>nul || exit 0"
+                echo 'Nettoyage des anciens conteneurs...'
+                // Arrêt et suppression des anciens conteneurs s'ils existent (évite les conflits)
+                bat "docker stop minilinkedin-app react-app 2>nul || exit 0"
+                bat "docker rm minilinkedin-app react-app 2>nul || exit 0"
                 
-                // Lancement du nouveau conteneur en arrière-plan
+                echo 'Déploiement du Backend sur le port 8081...'
                 bat "docker run -d --name minilinkedin-app --add-host=host.docker.internal:host-gateway -p 8081:8081 minilinkedin:1.0.0"
+
+                echo 'Déploiement du Frontend React sur le port 5173...'
+                // On mappe le port 5173 de votre machine Windows sur le port 80 de Nginx
+                bat "docker run -d --name react-app -p 5173:80 minilinkedin-frontend:1.0.0"
             }
         }
 
