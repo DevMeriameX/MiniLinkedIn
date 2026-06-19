@@ -101,7 +101,7 @@ pipeline {
                 bat "docker rm minilinkedin-app || true"
                 
                 // Lancement du nouveau conteneur en arrière-plan
-                bat "docker run -d --name minilinkedin-app -p 8080:8080 minilinkedin:1.0.0"
+                bat "docker run -d --name minilinkedin-app -p 8080:8081 minilinkedin:1.0.0"
             }
         }
 
