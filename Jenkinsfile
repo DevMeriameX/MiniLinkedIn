@@ -131,7 +131,7 @@ pipeline {
                 bat "mkdir rapports"
                 
                 // On lance JMeter en mode console qui va cibler l'application fraîchement déployée
-                bat "jmeter -n -t scenario.jmx -l rapports/resultats.jtl"
+                bat "C:\\apache-jmeter-5.6.3\\bin\\jmeter.bat -n -t scenario.jmx -l rapports/resultats.jtl"
                 
                 // Affiche les graphiques JMeter directement dans Jenkins
                 perfReport sourceDataFiles: 'rapports/resultats.jtl'
